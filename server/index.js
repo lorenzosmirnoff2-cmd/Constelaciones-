@@ -62,7 +62,9 @@ setInterval(() => {
 
 const app = express();
 app.use(cors({ origin: CLIENT_ORIGIN }));
-app.use(express.json());
+// Una constelación guardada lleva las figuras de cada momento: el límite de
+// 100 kB que trae Express por defecto se queda corto en sesiones largas.
+app.use(express.json({ limit: '4mb' }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ ok: true, sessions: sessions.size, uptime: process.uptime() });
