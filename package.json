@@ -1,0 +1,21 @@
+{
+  "name": "constelaciones-familiares",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Plataforma web de constelaciones familiares en 3D a distancia",
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "install:all": "npm install --prefix server && npm install --prefix client",
+    "dev": "concurrently -n server,client -c cyan,magenta \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
+    "build": "npm run build --prefix client",
+    "build:deploy": "npm run install:all && npm run build",
+    "start": "npm run start --prefix server",
+    "tunel": "npx --yes cloudflared tunnel --url http://localhost:4000"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

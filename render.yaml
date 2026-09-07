@@ -1,0 +1,13 @@
+# Despliegue en Render como un único servicio: el mismo proceso sirve el cliente
+# compilado y mantiene abiertas las conexiones WebSocket de las sesiones.
+services:
+  - type: web
+    name: constelaciones
+    runtime: node
+    plan: free
+    buildCommand: npm run build:deploy
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: '20'
