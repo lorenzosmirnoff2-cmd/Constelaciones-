@@ -189,6 +189,8 @@ textarea {
 }
 
 input[type='text'],
+input[type='email'],
+input[type='password'],
 input:not([type]),
 textarea,
 .search,
@@ -884,4 +886,121 @@ input[type='range'] {
   letter-spacing: 0.1em;
   pointer-events: none;
   user-select: none;
+}
+
+/* --------------------------------------------------------------- cuenta */
+.account {
+  margin-top: 22px;
+  padding-top: 18px;
+  border-top: 1px solid var(--line);
+}
+.account__pitch {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+.account__pitch strong {
+  color: var(--text);
+}
+.account__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 4px;
+  font-size: 13px;
+  color: var(--muted);
+}
+.account h3 {
+  margin: 12px 0 8px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.account__form {
+  display: grid;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.account__switch {
+  display: flex;
+  gap: 6px;
+}
+.account__switch button {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  background: none;
+  color: var(--muted);
+  cursor: pointer;
+  font-size: 13px;
+}
+.account__switch button.is-active {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--text);
+}
+.account__error {
+  margin: 0;
+  font-size: 12px;
+  color: #f0b6b6;
+}
+.account__status {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: var(--ok);
+}
+
+.linkish {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--accent);
+  cursor: pointer;
+  font-size: inherit;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.savedlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 6px;
+}
+.savedlist li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.04);
+}
+.savedlist__info {
+  flex: 1;
+  min-width: 0;
+  display: grid;
+}
+.savedlist__info strong {
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.savedlist__info span {
+  font-size: 11px;
+  color: var(--muted);
+}
+.savedlist--compact li {
+  padding: 6px 8px;
+}
+
+.chip--account {
+  border-color: var(--accent);
+  background: var(--accent-soft);
 }

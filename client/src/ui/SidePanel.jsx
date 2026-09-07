@@ -1,7 +1,24 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useStore } from '../store.js';
 import { ROLE_GROUPS, ROLES_BY_KEY, roleColor } from '@shared/roles.js';
-import { addFigure, clearRoom, removeFigure, restoreSnapshot, saveSnapshot, sendChat } from '../net.js';
+import {
+  addFigure,
+  clearRoom,
+  exportSession,
+  loadSession,
+  removeFigure,
+  restoreSnapshot,
+  saveSnapshot,
+  sendChat,
+} from '../net.js';
+import {
+  deleteConstellation,
+  fetchConstellation,
+  loadMyConstellations,
+  overwriteConstellation,
+  saveConstellation,
+} from '../api.js';
+import { AuthForm, fecha, plural } from './Account.jsx';
 
 export function SidePanel() {
   const panel = useStore((s) => s.panel);
@@ -139,6 +156,8 @@ function SessionTab() {
 
   return (
     <div className="tab">
+      <ArchiveSection />
+
       <section className="rolegroup">
         <h3>Momentos de la constelación</h3>
         <p className="hint">
@@ -197,6 +216,153 @@ function SessionTab() {
         </button>
       </section>
     </div>
+  );
+}
+
+/**
+ * Archivo personal: guarda la sala tal como está en la cuenta de quien la abre,
+ * y permite volver a traer cualquier constelación guardada. Al traerla, la ven
+ * los dos participantes.
+ */
+function ArchiveSection() {
+  const user = useStore((s) => s.user);
+  const saved = useStore((s) => s.myConstellations);
+  const openOne = useStore((s) => s.openConstellation);
+  const figures = useStore((s) => s.figures);
+  const [name, setName] = useState('');
+  const [status, setStatus] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [showAuth, setShowAuth] = useState(false);
+
+  useEffect(() => {
+    if (user) loadMyConstellations();
+  }, [user]);
+
+  useEffect(() => {
+    if (openOne?.name) setName(openOne.name);
+  }, [openOne]);
+
+  const flash = (text) => {
+    setStatus(text);
+    setTimeout(() => setStatus(null), 2600);
+  };
+
+  const store = async (targetId) => {
+    setBusy(true);
+    const room = await exportSession();
+    if (!room?.ok) {
+      setBusy(false);
+      return flash('No se pudo leer la sala.');
+    }
+    const payload = {
+      name: name.trim() || `Constelación del ${fecha(Date.now())}`,
+      code: room.code,
+      figures: room.figures,
+      snapshots: room.snapshots,
+    };
+    const res = targetId ? await overwriteConstellation(targetId, payload) : await saveConstellation(payload);
+    setBusy(false);
+    if (!res?.ok) return flash(res?.error ?? 'No se pudo guardar.');
+    useStore.setState({ openConstellation: { id: res.constelacion.id, name: res.constelacion.name } });
+    flash(targetId ? 'Actualizada en tu cuenta.' : 'Guardada en tu cuenta.');
+  };
+
+  const bring = async (c) => {
+    if (Object.keys(figures).length && !confirm(`Traer «${c.name}» reemplaza lo que hay en la sala para los dos. ¿Seguimos?`))
+      return;
+    setBusy(true);
+    const res = await fetchConstellation(c.id);
+    if (res?.ok) {
+      await loadSession({ figures: res.constelacion.figures, snapshots: res.constelacion.snapshots });
+      useStore.setState({ openConstellation: { id: c.id, name: c.name }, selectedId: null });
+      flash(`«${c.name}» está en la sala.`);
+    } else {
+      flash(res?.error ?? 'No se pudo abrir.');
+    }
+    setBusy(false);
+  };
+
+  if (!user) {
+    return (
+      <section className="rolegroup">
+        <h3>Mis constelaciones</h3>
+        {showAuth ? (
+          <>
+            <AuthForm onDone={() => setShowAuth(false)} />
+            <button className="linkish" onClick={() => setShowAuth(false)}>
+              ahora no
+            </button>
+          </>
+        ) : (
+          <p className="hint">
+            Con una cuenta podés guardar esta constelación y volver a abrirla en otra sesión.{' '}
+            <button className="linkish" onClick={() => setShowAuth(true)}>
+              Entrar o crear cuenta
+            </button>
+          </p>
+        )}
+      </section>
+    );
+  }
+
+  return (
+    <section className="rolegroup">
+      <h3>Mis constelaciones</h3>
+      <p className="hint">
+        Se guarda en tu cuenta ({user.name}) con las posiciones actuales y todos los momentos. El consultante no la ve
+        en su archivo.
+      </p>
+
+      <div className="row">
+        <input
+          className="search"
+          placeholder="Nombre de la constelación"
+          value={name}
+          maxLength={80}
+          onChange={(e) => setName(e.target.value)}
+        />
+        <button className="btn btn--sm btn--primary" disabled={busy} onClick={() => store(null)}>
+          Guardar
+        </button>
+      </div>
+
+      {openOne && (
+        <button className="btn btn--sm" disabled={busy} onClick={() => store(openOne.id)}>
+          Actualizar «{openOne.name}»
+        </button>
+      )}
+
+      {status && <p className="account__status">{status}</p>}
+
+      <ul className="savedlist savedlist--compact">
+        {saved.length === 0 && <li className="empty">Todavía no guardaste ninguna.</li>}
+        {saved.map((c) => (
+          <li key={c.id}>
+            <div className="savedlist__info">
+              <strong>{c.name}</strong>
+              <span>
+                {fecha(c.updatedAt)} · {plural(c.figuras, 'representante', 'representantes')}
+              </span>
+            </div>
+            <button className="btn btn--sm" disabled={busy} title="Traer a esta sala" onClick={() => bring(c)}>
+              traer
+            </button>
+            <button
+              className="role__add role__add--danger"
+              title="Borrar de mi cuenta"
+              onClick={() => {
+                if (confirm(`¿Borrar «${c.name}» de tu cuenta? No se puede deshacer.`)) {
+                  deleteConstellation(c.id);
+                  if (openOne?.id === c.id) useStore.setState({ openConstellation: null });
+                }
+              }}
+            >
+              ×
+            </button>
+          </li>
+        ))}
+      </ul>
+    </section>
   );
 }
 

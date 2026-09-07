@@ -68,7 +68,40 @@ origen que el servidor de sesiones (http://localhost:4000).
   sistémicos (síntoma, excluido, recurso, dinero, destino, muerte…).
 - **Sesión**: guardar *momentos* de la constelación y restaurarlos para ambos, mostrar u ocultar
   nombres y grilla, y vaciar la sala.
+- **Mis constelaciones**: archivo personal de quien tenga la cuenta (ver abajo).
 - **Chat** de texto, con contador de mensajes sin leer.
+
+## Cuentas y constelaciones guardadas
+
+La cuenta es **opcional**: sin registrarse se puede constelar igual, sólo que al
+cerrar la sala no queda nada guardado. Con cuenta, cada persona tiene su propio
+archivo:
+
+- Se crea desde el vestíbulo o desde la pestaña **Sesión** dentro de la sala.
+- **Guardar** archiva la sala como está: posiciones, giros, nombres, notas y todos
+  los momentos guardados.
+- Desde el vestíbulo, **Abrir en una sala** crea una sesión nueva ya armada con esa
+  constelación, lista para pasarle el código al consultante.
+- Dentro de la sala, **traer** reemplaza lo que hay por una constelación guardada,
+  y el cambio lo ven los dos al instante.
+- Cada archivo es privado: el consultante no ve las constelaciones del constelador
+  ni al revés, aunque compartan la sala. Quien quiera guardarse la sesión la guarda
+  en su propia cuenta.
+
+Las contraseñas se guardan con `scrypt` y sal por usuario; la sesión iniciada viaja
+en un token firmado que vale 30 días.
+
+### Dónde se guardan los datos
+
+| Variable | Para qué |
+| --- | --- |
+| `DATABASE_URL` | Cadena de conexión a Postgres. **Es la que hay que poner en producción**: las cuentas sobreviven a reinicios y redespliegues. Sirve cualquier Postgres gestionado (Neon, Supabase, Render). |
+| `AUTH_SECRET` | Clave con la que se firman las sesiones iniciadas. Si no está, el servidor genera una y la guarda junto a los datos. |
+| `DATA_DIR` | Sólo sin `DATABASE_URL`: carpeta del archivo JSON de respaldo (por defecto `.data/`). |
+
+Sin `DATABASE_URL` todo va a un archivo JSON local. Alcanza para desarrollo, pero en
+un hosting de disco efímero —como el plan gratuito de Render— ese archivo se borra en
+cada redespliegue y las cuentas se pierden. Las tablas se crean solas la primera vez.
 
 ### Videollamada
 
@@ -119,6 +152,10 @@ En el plan gratuito el servicio se duerme tras un rato sin uso: la primera visit
 30 segundos en despertar, y **al dormirse se pierden las sesiones abiertas**. Para sesiones
 reales conviene el plan pago o persistir las sesiones en una base.
 
+Para que las **cuentas** no se pierdan hay que darle una base de datos: crear un Postgres
+gratuito (por ejemplo en [neon.tech](https://neon.tech)) y pegar su cadena de conexión en
+Render → *Environment* → **DATABASE_URL**. El servidor crea las tablas solo al arrancar.
+
 Railway y Fly.io funcionan igual de bien con los mismos dos comandos.
 
 ### Probarla hoy sin publicar nada
@@ -144,10 +181,14 @@ mientras la terminal siga abierta y la computadora prendida.
 
 ```
 server/index.js      Express + Socket.IO: sesiones, sincronización y señalización WebRTC
+server/api.js        Rutas HTTP de cuentas y de constelaciones guardadas
+server/auth.js       Contraseñas (scrypt) y tokens de sesión firmados
+server/storage.js    Capa de datos: Postgres si hay DATABASE_URL, archivo JSON si no
 shared/roles.js      Catálogo de roles compartido entre cliente y servidor
 client/src/scene/    Sala 3D (react-three-fiber): cámara, figuras, presencia del otro
-client/src/ui/       Lobby, barra superior, panel lateral, inspector, videollamada, ayuda
+client/src/ui/       Lobby, barra superior, panel lateral, inspector, videollamada, cuenta
 client/src/net.js    Cliente de Socket.IO y acciones de red
+client/src/api.js    Llamadas a la API de cuentas
 client/src/store.js  Estado global (zustand)
 ```
 
@@ -160,10 +201,14 @@ ver la perspectiva del otro sin saturar la conexión.
 
 ## Pendientes conocidos
 
-- Las sesiones viven en memoria: si se reinicia el servidor se pierden (se descartan solas a las
-  12 h sin actividad). Para producción conviene persistirlas en una base.
+- Las **salas en vivo** viven en memoria: si se reinicia el servidor se pierden (se descartan
+  solas a las 12 h sin actividad). Las constelaciones guardadas en una cuenta sí persisten,
+  siempre que haya `DATABASE_URL`.
+- No hay recuperación de contraseña por correo: si alguien la olvida, hay que reasignarla a
+  mano en la base.
 - La videollamada usa sólo STUN público. En redes con NAT simétrico hace falta un servidor TURN
   propio; se agrega en la lista `iceServers` de `client/src/ui/VideoDock.jsx`.
 - Está pensada para dos participantes. El modelo del servidor admite más, pero la videollamada
   y el selector de perspectiva asumen una sola contraparte.
-- No hay cuentas ni autenticación: quien tenga el código entra a la sala.
+- La sala en sí no pide cuenta: quien tenga el código entra. La cuenta sólo gobierna el archivo
+  personal de constelaciones guardadas.

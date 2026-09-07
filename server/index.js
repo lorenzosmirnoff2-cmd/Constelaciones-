@@ -6,6 +6,8 @@ import express from 'express';
 import cors from 'cors';
 import { Server } from 'socket.io';
 import { customAlphabet } from 'nanoid';
+import { apiRouter, cleanFigures } from './api.js';
+import { getStore } from './storage.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const PORT = process.env.PORT || 4000;
@@ -90,6 +92,14 @@ app.get('/api/session/:code', (req, res) => {
   const session = sessions.get(String(req.params.code).toUpperCase());
   if (!session) return res.status(404).json({ ok: false, error: 'Sesión no encontrada' });
   res.json({ ok: true, code: session.code, participants: session.participants.size });
+});
+
+// Cuentas y constelaciones guardadas.
+app.use('/api', apiRouter());
+
+app.use('/api', (err, _req, res, _next) => {
+  console.error('[constelaciones] error de API:', err);
+  res.status(500).json({ ok: false, error: 'Algo falló del lado del servidor.' });
 });
 
 // En producción sirve el build del cliente desde el mismo origen.
@@ -256,6 +266,42 @@ io.on('connection', (socket) => {
     io.to(session.code).emit('session:replaced', { figures: Object.fromEntries(session.figures) });
   });
 
+  // Estado completo (con las figuras de cada momento) para guardarlo en una cuenta.
+  socket.on('session:export', (_p, ack) => {
+    const session = sessionOf(socket);
+    if (!session) return ack?.({ ok: false });
+    ack?.({
+      ok: true,
+      code: session.code,
+      figures: Array.from(session.figures.values()).map((f) => ({ ...f })),
+      snapshots: session.snapshots.map((s) => ({ ...s, figures: s.figures.map((f) => ({ ...f })) })),
+    });
+  });
+
+  // Traer una constelación guardada a la sala: la ven los dos al instante.
+  socket.on('session:load', ({ figures, snapshots } = {}, ack) => {
+    const session = sessionOf(socket);
+    if (!session) return ack?.({ ok: false });
+    const clean = cleanFigures(figures).map((f) => ({ ...f, id: f.id || newId(), createdBy: socket.id, createdAt: Date.now() }));
+    session.figures = new Map(clean.map((f) => [f.id, f]));
+    if (Array.isArray(snapshots)) {
+      session.snapshots = snapshots.slice(-30).map((s) => ({
+        id: s.id || newId(),
+        name: String(s.name ?? 'Momento').slice(0, 60),
+        createdAt: Number(s.createdAt) || Date.now(),
+        figures: cleanFigures(s.figures),
+      }));
+    }
+    touch(session);
+    io.to(session.code).emit('session:replaced', { figures: Object.fromEntries(session.figures) });
+    io.to(session.code).emit(
+      'snapshot:list',
+      session.snapshots.map(({ id, name, createdAt }) => ({ id, name, createdAt })),
+    );
+    pushLog(session, { type: 'load', by: socket.id });
+    ack?.({ ok: true });
+  });
+
   // Señalización WebRTC para la videollamada 1 a 1.
   socket.on('rtc:signal', ({ to, data } = {}) => {
     if (!to) return;
@@ -291,6 +337,12 @@ io.on('connection', (socket) => {
   });
 });
 
-server.listen(PORT, () => {
-  console.log(`[constelaciones] servidor escuchando en http://localhost:${PORT}`);
-});
+// Deja lista la base (o el archivo) antes de aceptar visitas, así un problema de
+// configuración se ve en el arranque y no en el primer registro.
+getStore()
+  .catch((err) => console.error('[constelaciones] no se pudo abrir el almacén de cuentas:', err))
+  .finally(() => {
+    server.listen(PORT, () => {
+      console.log(`[constelaciones] servidor escuchando en http://localhost:${PORT}`);
+    });
+  });

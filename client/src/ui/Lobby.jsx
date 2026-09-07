@@ -1,10 +1,13 @@
 import { useEffect, useState } from 'react';
 import { useStore } from '../store.js';
-import { createSession, joinSession } from '../net.js';
+import { createSession, joinSession, loadSession } from '../net.js';
+import { fetchConstellation, restoreSession } from '../api.js';
+import { AccountBox } from './Account.jsx';
 
 export function Lobby() {
   const connected = useStore((s) => s.connected);
   const error = useStore((s) => s.error);
+  const user = useStore((s) => s.user);
   const [name, setName] = useState(() => localStorage.getItem('cf.name') ?? '');
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
@@ -13,7 +16,13 @@ export function Lobby() {
     // El código puede llegar en el enlace que comparte el constelador.
     const fromUrl = new URLSearchParams(location.search).get('codigo');
     if (fromUrl) setCode(fromUrl.toUpperCase());
+    restoreSession();
   }, []);
+
+  // Al entrar a la cuenta, el nombre de la sala pasa a ser el de la cuenta.
+  useEffect(() => {
+    if (user?.name) setName((n) => n.trim() || user.name);
+  }, [user]);
 
   const remember = () => localStorage.setItem('cf.name', name.trim());
 
@@ -30,6 +39,23 @@ export function Lobby() {
     setBusy(true);
     remember();
     await joinSession(code, name);
+    setBusy(false);
+  };
+
+  // Abre una constelación archivada: crea una sala nueva y la deja armada.
+  const onOpenSaved = async (summary) => {
+    setBusy(true);
+    remember();
+    const res = await fetchConstellation(summary.id);
+    if (res?.ok) {
+      const created = await createSession(name || user?.name);
+      if (created?.ok) {
+        await loadSession({ figures: res.constelacion.figures, snapshots: res.constelacion.snapshots });
+        useStore.setState({ openConstellation: { id: summary.id, name: summary.name } });
+      }
+    } else {
+      useStore.setState({ error: res?.error ?? 'No se pudo abrir esa constelación.' });
+    }
     setBusy(false);
   };
 
@@ -88,6 +114,8 @@ export function Lobby() {
             </form>
           </section>
         </div>
+
+        <AccountBox onOpenSaved={onOpenSaved} busy={busy || !connected} />
 
         {error && <p className="lobby__error">{error}</p>}
         <footer className="lobby__foot">

@@ -13,6 +13,8 @@ export function TopBar() {
   const viewTargetId = useStore((s) => s.viewTargetId);
   const figures = useStore((s) => s.figures);
   const setView = useStore((s) => s.setView);
+  const user = useStore((s) => s.user);
+  const setPanel = useStore((s) => s.setPanel);
   const [copied, setCopied] = useState(null);
 
   const peers = Object.values(participants).filter((p) => p.id !== me?.id);
@@ -96,6 +98,16 @@ export function TopBar() {
         <button className="chip" onClick={() => (setView('orbit'), topView())} title="Vista desde arriba">
           Vista cenital
         </button>
+        {user && (
+          <button
+            className="chip chip--account"
+            onClick={() => setPanel('sesion')}
+            title={`Cuenta de ${user.email}: guardar y abrir constelaciones`}
+          >
+            {user.name}
+            <em>mis constelaciones</em>
+          </button>
+        )}
       </div>
     </header>
   );

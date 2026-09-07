@@ -69,6 +69,7 @@ function applySession(res) {
   useStore.setState({
     phase: 'room',
     error: null,
+    openConstellation: null, // la sala arranca sin archivo asociado
     code: state.code,
     me: { ...me, id: selfId },
     participants: state.participants,
@@ -104,6 +105,16 @@ export function updateFigure(id, patch, { immediate = false } = {}) {
   if (!immediate && now - (lastSent.get(id) ?? 0) < 45) return;
   lastSent.set(id, now);
   socket.emit('figure:update', { id, patch });
+}
+
+/** Estado completo de la sala, con las figuras de cada momento, para archivarlo. */
+export function exportSession() {
+  return new Promise((resolve) => socket.emit('session:export', null, resolve));
+}
+
+/** Trae una constelación guardada a la sala. La ven los dos participantes. */
+export function loadSession({ figures, snapshots }) {
+  return new Promise((resolve) => socket.emit('session:load', { figures, snapshots }, resolve));
 }
 
 export const removeFigure = (id) => socket.emit('figure:remove', { id });

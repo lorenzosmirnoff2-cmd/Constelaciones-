@@ -11,3 +11,10 @@ services:
     envVars:
       - key: NODE_VERSION
         value: '20'
+      # Firma las sesiones iniciadas. Render la genera una vez y la conserva,
+      # así nadie tiene que volver a entrar a su cuenta tras un reinicio.
+      - key: AUTH_SECRET
+        generateValue: true
+      # DATABASE_URL se agrega a mano en el panel de Render (Environment). Sin
+      # ella las cuentas se guardan en un archivo que el plan gratuito borra en
+      # cada redespliegue; con ella viven en Postgres y son permanentes.

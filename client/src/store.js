@@ -14,6 +14,11 @@ export const useStore = create((set, get) => ({
   me: null, // { id, name, role: 'constelador' | 'consultante' }
   participants: {},
 
+  // --- cuenta (opcional: se puede constelar sin registrarse) --------------
+  user: null, // { id, email, name }
+  myConstellations: [], // resúmenes de las constelaciones guardadas en la cuenta
+  openConstellation: null, // { id, name } si la sala salió de una guardada
+
   // --- contenido de la constelación --------------------------------------
   figures: {},
   snapshots: [],
