@@ -100,6 +100,12 @@ app.get('/api/session/:code', (req, res) => {
 app.use('/api', apiRouter());
 
 app.use('/api', (err, _req, res, _next) => {
+  if (err?.type === 'entity.too.large') {
+    return res.status(413).json({ ok: false, error: 'La constelación es demasiado grande para guardarla.' });
+  }
+  if (err?.type === 'entity.parse.failed') {
+    return res.status(400).json({ ok: false, error: 'No se entendió el pedido.' });
+  }
   console.error('[constelaciones] error de API:', err);
   res.status(500).json({ ok: false, error: 'Algo falló del lado del servidor.' });
 });
