@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store.js';
 import { deleteConstellation, loadMyConstellations, login, logout, register } from '../api.js';
 
@@ -18,6 +18,16 @@ export function AuthForm({ onDone }) {
   const [name, setName] = useState(() => localStorage.getItem('cf.name') ?? '');
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState(null);
+  const form = useRef(null);
+
+  // El formulario aparece al pie de una tarjeta que puede ser más alta que la
+  // pantalla, y al pasar a «Crear cuenta» crece un campo más. En los dos casos
+  // lo traemos a la vista. Sin `behavior: 'smooth'` y sin esperar un cuadro de
+  // animación: los dos se saltean si el navegador no está pintando, y el
+  // formulario quedaría fuera de pantalla.
+  useEffect(() => {
+    form.current?.scrollIntoView({ block: 'center' });
+  }, [mode]);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -31,7 +41,7 @@ export function AuthForm({ onDone }) {
   };
 
   return (
-    <form className="account__form" onSubmit={submit}>
+    <form className="account__form" onSubmit={submit} ref={form}>
       <div className="account__switch">
         <button type="button" className={mode === 'entrar' ? 'is-active' : ''} onClick={() => setMode('entrar')}>
           Entrar

@@ -42,13 +42,18 @@ textarea {
 }
 
 /* ---------------------------------------------------------------- lobby */
+/* La tarjeta crece bastante al abrir el formulario de cuenta. Con `height` fijo
+   el vestíbulo es un contenedor con scroll propio, y el `margin: auto` de la
+   tarjeta la centra cuando entra sin recortarla por arriba cuando no entra
+   (que es lo que pasaba con `place-items: center`). */
 .lobby {
   position: relative;
-  display: grid;
-  place-items: center;
-  min-height: 100%;
+  display: flex;
+  justify-content: center;
+  height: 100%;
   padding: 24px;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: radial-gradient(circle at 50% -10%, #2a231d 0%, var(--bg) 60%);
 }
 
@@ -64,6 +69,8 @@ textarea {
 
 .lobby__card {
   position: relative;
+  margin: auto;
+  flex: none;
   width: min(720px, 100%);
   padding: 34px;
   border: 1px solid var(--line);
@@ -163,6 +170,15 @@ textarea {
 }
 
 @media (max-width: 720px) {
+  .lobby {
+    padding: 14px;
+  }
+  .lobby__card {
+    padding: 22px 18px;
+  }
+  .lobby__head h1 {
+    font-size: 24px;
+  }
   .lobby__actions {
     grid-template-columns: 1fr;
   }
