@@ -744,6 +744,10 @@ input[type='range'] {
   width: 296px;
   z-index: 180;
 }
+.videodock__label--short {
+  display: none;
+}
+
 .videodock__tab {
   display: flex;
   gap: 8px;
@@ -1124,10 +1128,28 @@ input[type='range'] {
   .side.is-collapsed {
     right: auto;
   }
+  /* La pestaña de la videollamada comparte fila con la del panel lateral, así
+     que cerrada se queda pegada a la derecha y del ancho de su texto. Abierta
+     ocupa todo el ancho y se pone por encima del panel. */
   .videodock {
+    left: auto;
     right: 8px;
+    width: auto;
+    max-width: calc(100% - 16px);
+  }
+  .videodock:not(.is-open) .videodock__tab {
+    width: auto;
+  }
+  .videodock:not(.is-open) .videodock__label--full {
+    display: none;
+  }
+  .videodock:not(.is-open) .videodock__label--short {
+    display: inline;
+  }
+  .videodock.is-open {
     left: 8px;
     width: auto;
+    z-index: 195;
   }
 
   /* El inspector se vuelve una ficha al pie, no una barra fija de 380px. */

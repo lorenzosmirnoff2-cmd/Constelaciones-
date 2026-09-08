@@ -202,7 +202,10 @@ export function VideoDock() {
     <div className={`videodock${open ? ' is-open' : ''}`}>
       <button className="videodock__tab" onClick={() => setOpen((v) => !v)}>
         <span className="videodock__icon" aria-hidden="true">▣</span>
-        Videollamada
+        {/* En el celular la pestaña convive con la del panel lateral: ahí entra
+            la versión corta. */}
+        <span className="videodock__label videodock__label--full">Videollamada</span>
+        <span className="videodock__label videodock__label--short">Video</span>
         {status === 'live' && <span className="dot dot--on" />}
         {status === 'incoming' && <span className="dot dot--ring" />}
       </button>
