@@ -40,8 +40,8 @@ origen que el servidor de sesiones (http://localhost:4000).
 | Acción | Cómo |
 | --- | --- |
 | Caminar | `W` `A` `S` `D` o flechas |
-| Mirar alrededor | arrastrar con el mouse sobre el piso o la pared |
-| Acercarse / alejarse | rueda del mouse |
+| Mirar alrededor | arrastrar con el mouse sobre el piso o la pared (un dedo en el celular) |
+| Acercarse / alejarse | `,` / `.`, los botones `+` y `−` de la esquina, la rueda del mouse o pellizcar con dos dedos |
 | Subir / bajar la vista | `Espacio` / `Z` |
 | Moverse más rápido | `Shift` |
 | Mover una figura | arrastrarla |
@@ -49,6 +49,14 @@ origen que el servidor de sesiones (http://localhost:4000).
 | Mirar desde una figura | doble clic sobre ella, o el botón `◉` de la lista |
 | Quitar una figura | `Supr` con la figura seleccionada |
 | Deseleccionar | `Esc` o clic en el piso |
+| Salir de la sala | botón **Salir** de la barra superior |
+
+Las teclas `,` y `.` y los botones de la esquina hacen lo mismo que la rueda: acercan y alejan
+sobre la línea de la mirada. Mantenerlos apretados sigue acercando. Mientras se mira desde una
+figura o desde la otra persona quedan inactivos, porque ahí la posición no es propia.
+
+**Salir** devuelve al menú principal sin cerrar la sala: la otra persona sigue adentro, la
+constelación queda en el servidor y con el mismo código se vuelve a entrar.
 
 ### Vistas
 
@@ -102,6 +110,19 @@ en un token firmado que vale 30 días.
 Sin `DATABASE_URL` todo va a un archivo JSON local. Alcanza para desarrollo, pero en
 un hosting de disco efímero —como el plan gratuito de Render— ese archivo se borra en
 cada redespliegue y las cuentas se pierden. Las tablas se crean solas la primera vez.
+
+### En el celular
+
+La sala funciona con la pantalla en vertical:
+
+- El panel lateral arranca cerrado y ocupa el ancho completo al abrirlo. Al elegir un rol se
+  cierra solo, para poder tocar el piso; el aviso de *colocando* queda flotando arriba.
+- El inspector de la figura seleccionada pasa a ser una ficha al pie, de 40 % de la pantalla
+  como máximo y con los campos en una columna. Los botones de acercar se corren por encima.
+- La barra superior se parte en varias filas: su alto se publica como la variable CSS
+  `--topbar-h` y el panel y la videollamada arrancan justo debajo, sin superponerse.
+- Los campos de texto usan 16 px, que es el mínimo con el que Safari en iPhone no agranda la
+  página al enfocarlos.
 
 ### Videollamada
 

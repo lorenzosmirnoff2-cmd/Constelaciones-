@@ -1,6 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useStore } from '../store.js';
-import { setFollowing } from '../net.js';
+import { leaveSession, setFollowing } from '../net.js';
 import { resetView, topView } from '../scene/Controls.jsx';
 import { ROLES_BY_KEY } from '@shared/roles.js';
 
@@ -16,8 +16,23 @@ export function TopBar() {
   const user = useStore((s) => s.user);
   const setPanel = useStore((s) => s.setPanel);
   const [copied, setCopied] = useState(null);
+  const bar = useRef(null);
 
   const peers = Object.values(participants).filter((p) => p.id !== me?.id);
+
+  // En pantallas angostas la barra se parte en varias filas y su alto cambia
+  // según los nombres y la cantidad de botones. Lo publicamos como variable CSS
+  // para que el panel lateral y la videollamada arranquen justo debajo.
+  useEffect(() => {
+    const el = bar.current;
+    if (!el) return undefined;
+    const publish = () =>
+      document.documentElement.style.setProperty('--topbar-h', `${Math.round(el.offsetHeight)}px`);
+    publish();
+    const ro = new ResizeObserver(publish);
+    ro.observe(el);
+    return () => ro.disconnect();
+  }, []);
 
   const copy = async (text, tag) => {
     try {
@@ -44,11 +59,21 @@ export function TopBar() {
     setFollowing(null);
   };
 
+  const leave = () => {
+    const aviso = peers.length
+      ? `Vas a salir de la sala. ${peers[0].name} se queda adentro y la constelación no se pierde: con el código ${code} volvés a entrar.`
+      : 'Vas a salir de la sala y volver al menú principal.';
+    if (confirm(aviso)) {
+      resetView();
+      leaveSession();
+    }
+  };
+
   const viewingFigure = viewMode === 'figure' ? figures[viewTargetId] : null;
   const followingPeer = viewMode === 'peer' ? participants[viewTargetId] : null;
 
   return (
-    <header className="topbar">
+    <header className="topbar" ref={bar}>
       <div className="topbar__group">
         <span className="topbar__label">Sesión</span>
         <button className="chip chip--code" onClick={() => copy(code, 'code')} title="Copiar código">
@@ -108,6 +133,9 @@ export function TopBar() {
             <em>mis constelaciones</em>
           </button>
         )}
+        <button className="chip chip--leave" onClick={leave} title="Salir de la sala y volver al menú principal">
+          Salir
+        </button>
       </div>
     </header>
   );

@@ -80,6 +80,41 @@ function applySession(res) {
   return res;
 }
 
+/**
+ * Deja la sala y vuelve al menú principal. Se corta la conexión para que la
+ * otra persona vea que nos fuimos, y se abre una nueva para poder entrar a otra
+ * sesión sin recargar la página. La constelación queda en el servidor: quien
+ * siga adentro la conserva, y con el mismo código se puede volver a entrar.
+ */
+export function leaveSession() {
+  socket.disconnect();
+  useStore.setState({
+    phase: 'lobby',
+    error: null,
+    code: null,
+    me: null,
+    participants: {},
+    figures: {},
+    snapshots: [],
+    chat: [],
+    unreadChat: 0,
+    cameras: {},
+    selectedId: null,
+    hoveredId: null,
+    viewMode: 'orbit',
+    viewTargetId: null,
+    placingRole: null,
+    openConstellation: null,
+    panel: 'roles',
+  });
+  // Si entramos por un enlace con código, lo sacamos de la barra de direcciones
+  // para que "volver a entrar" no vuelva a la misma sala sin querer.
+  if (new URLSearchParams(location.search).has('codigo')) {
+    history.replaceState(null, '', location.pathname);
+  }
+  socket.connect();
+}
+
 export function createSession(name) {
   return new Promise((resolve) => socket.emit('session:create', { name }, (r) => resolve(applySession(r))));
 }

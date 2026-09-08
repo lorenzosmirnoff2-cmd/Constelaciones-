@@ -40,6 +40,27 @@ const tmpQuat = new THREE.Quaternion();
 const tmpEuler = new THREE.Euler(0, 0, 0, 'YXZ');
 const remotePos = new THREE.Vector3();
 const remoteQuat = new THREE.Quaternion();
+const zoomStep = new THREE.Vector3();
+const zoomEuler = new THREE.Euler(0, 0, 0, 'YXZ');
+
+const ZOOM_KEY_SPEED = 7; // unidades por segundo mientras se mantiene , o .
+
+/**
+ * Acerca (positivo) o aleja (negativo) la cámara en la dirección en la que mira.
+ * Lo usan la rueda del mouse, los botones de la esquina, las teclas , y . y el
+ * pellizco con dos dedos.
+ *
+ * No hace nada mientras se mira desde una figura o desde la otra persona: en
+ * esos modos la posición la manda la figura o la cámara del otro.
+ */
+export function zoomBy(amount) {
+  const { viewMode } = useStore.getState();
+  if (viewMode === 'peer' || viewMode === 'figure') return;
+  zoomEuler.set(viewState.pitch, viewState.yaw, 0);
+  zoomStep.set(0, 0, -1).applyEuler(zoomEuler).multiplyScalar(amount);
+  viewState.pos.add(zoomStep);
+  clampPos();
+}
 
 export function CameraRig() {
   const { camera, gl } = useThree();
@@ -89,22 +110,43 @@ export function CameraRig() {
     const up = () => {
       viewState.looking = false;
     };
-    const wheel = (e) => {
-      if (useStore.getState().viewMode === 'peer') return;
-      tmpEuler.set(viewState.pitch, viewState.yaw, 0);
-      tmpForward.set(0, 0, -1).applyEuler(tmpEuler).multiplyScalar(-e.deltaY * 0.0035);
-      viewState.pos.add(tmpForward);
-      clampPos();
+    const wheel = (e) => zoomBy(-e.deltaY * 0.0035);
+
+    // --- pellizcar con dos dedos para acercar (celular y tablet) ----------
+    let pinch = 0;
+    const spread = (t) => Math.hypot(t[0].clientX - t[1].clientX, t[0].clientY - t[1].clientY);
+    const touchStart = (e) => {
+      if (e.touches.length !== 2) return;
+      pinch = spread(e.touches);
+      viewState.looking = false; // con dos dedos se acerca, no se gira la vista
     };
+    const touchMove = (e) => {
+      if (e.touches.length !== 2 || !pinch) return;
+      const now = spread(e.touches);
+      zoomBy((now - pinch) * 0.022);
+      pinch = now;
+    };
+    const touchEnd = (e) => {
+      if (e.touches.length < 2) pinch = 0;
+    };
+
     window.addEventListener('pointermove', move);
     window.addEventListener('pointerup', up);
     window.addEventListener('pointercancel', up);
     gl.domElement.addEventListener('wheel', wheel, { passive: true });
+    gl.domElement.addEventListener('touchstart', touchStart, { passive: true });
+    gl.domElement.addEventListener('touchmove', touchMove, { passive: true });
+    gl.domElement.addEventListener('touchend', touchEnd, { passive: true });
+    gl.domElement.addEventListener('touchcancel', touchEnd, { passive: true });
     return () => {
       window.removeEventListener('pointermove', move);
       window.removeEventListener('pointerup', up);
       window.removeEventListener('pointercancel', up);
       gl.domElement.removeEventListener('wheel', wheel);
+      gl.domElement.removeEventListener('touchstart', touchStart);
+      gl.domElement.removeEventListener('touchmove', touchMove);
+      gl.domElement.removeEventListener('touchend', touchEnd);
+      gl.domElement.removeEventListener('touchcancel', touchEnd);
     };
   }, [gl]);
 
@@ -159,6 +201,9 @@ export function CameraRig() {
       if (keys.has('Space')) (viewState.pos.y += speed, (moved = true));
       if (keys.has('KeyZ') || keys.has('ControlLeft')) (viewState.pos.y -= speed, (moved = true));
       if (moved) clampPos();
+      // Acercar y alejar manteniendo apretada la tecla.
+      if (keys.has('Comma')) zoomBy(ZOOM_KEY_SPEED * delta);
+      if (keys.has('Period')) zoomBy(-ZOOM_KEY_SPEED * delta);
     }
 
     camera.position.copy(viewState.pos);

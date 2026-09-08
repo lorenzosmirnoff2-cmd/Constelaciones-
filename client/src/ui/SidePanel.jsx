@@ -20,37 +20,61 @@ import {
 } from '../api.js';
 import { AuthForm, fecha, plural } from './Account.jsx';
 
+/** En pantallas angostas el panel tapa la sala, así que arranca cerrado. */
+const isNarrow = () => typeof window !== 'undefined' && window.innerWidth <= 720;
+
 export function SidePanel() {
   const panel = useStore((s) => s.panel);
   const setPanel = useStore((s) => s.setPanel);
   const unread = useStore((s) => s.unreadChat);
-  const [open, setOpen] = useState(true);
+  const placingRole = useStore((s) => s.placingRole);
+  const [open, setOpen] = useState(() => !isNarrow());
+
+  // Al elegir un rol hay que poder tocar el piso: en el celular el panel se
+  // corre solo para dejar la sala a la vista.
+  useEffect(() => {
+    if (placingRole && isNarrow()) setOpen(false);
+  }, [placingRole]);
 
   return (
-    <aside className={`side${open ? '' : ' is-collapsed'}`}>
-      <nav className="side__tabs">
-        <button className={panel === 'roles' ? 'is-active' : ''} onClick={() => (setPanel('roles'), setOpen(true))}>
-          Representantes
-        </button>
-        <button className={panel === 'sesion' ? 'is-active' : ''} onClick={() => (setPanel('sesion'), setOpen(true))}>
-          Sesión
-        </button>
-        <button className={panel === 'chat' ? 'is-active' : ''} onClick={() => (setPanel('chat'), setOpen(true))}>
-          Chat{unread > 0 && <span className="badge">{unread}</span>}
-        </button>
-        <button className="side__collapse" onClick={() => setOpen((v) => !v)} title={open ? 'Ocultar panel' : 'Mostrar panel'}>
-          {open ? '‹' : '›'}
-        </button>
-      </nav>
-
-      {open && (
-        <div className="side__body">
-          {panel === 'roles' && <RolesTab />}
-          {panel === 'sesion' && <SessionTab />}
-          {panel === 'chat' && <ChatTab />}
+    <>
+      {/* Con el panel cerrado el aviso de "colocando" tiene que verse igual. */}
+      {!open && placingRole && (
+        <div className="placing placing--floating">
+          Colocando <strong>{ROLES_BY_KEY[placingRole]?.label}</strong> — tocá el piso
+          <button onClick={() => useStore.setState({ placingRole: null })}>cancelar</button>
         </div>
       )}
-    </aside>
+
+      <aside className={`side${open ? '' : ' is-collapsed'}`}>
+        <nav className="side__tabs">
+          <button className={panel === 'roles' ? 'is-active' : ''} onClick={() => (setPanel('roles'), setOpen(true))}>
+            Representantes
+          </button>
+          <button className={panel === 'sesion' ? 'is-active' : ''} onClick={() => (setPanel('sesion'), setOpen(true))}>
+            Sesión
+          </button>
+          <button className={panel === 'chat' ? 'is-active' : ''} onClick={() => (setPanel('chat'), setOpen(true))}>
+            Chat{unread > 0 && <span className="badge">{unread}</span>}
+          </button>
+          <button
+            className="side__collapse"
+            onClick={() => setOpen((v) => !v)}
+            title={open ? 'Ocultar panel' : 'Mostrar panel'}
+          >
+            {open ? '‹' : '›'}
+          </button>
+        </nav>
+
+        {open && (
+          <div className="side__body">
+            {panel === 'roles' && <RolesTab />}
+            {panel === 'sesion' && <SessionTab />}
+            {panel === 'chat' && <ChatTab />}
+          </div>
+        )}
+      </aside>
+    </>
   );
 }
 

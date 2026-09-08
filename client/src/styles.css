@@ -433,7 +433,7 @@ input[type='range'] {
 /* ---------------------------------------------------------- panel side */
 .side {
   position: absolute;
-  top: 58px;
+  top: calc(var(--topbar-h, 52px) + 6px);
   left: 12px;
   bottom: 12px;
   width: 292px;
@@ -739,7 +739,7 @@ input[type='range'] {
 /* ----------------------------------------------------------- videodock */
 .videodock {
   position: absolute;
-  top: 58px;
+  top: calc(var(--topbar-h, 52px) + 6px);
   right: 12px;
   width: 296px;
   z-index: 180;
@@ -1019,4 +1019,163 @@ input[type='range'] {
 .chip--account {
   border-color: var(--accent);
   background: var(--accent-soft);
+}
+
+/* ------------------------------------------------------- acercar / alejar */
+.zoom {
+  position: absolute;
+  right: 12px;
+  bottom: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 170;
+}
+.zoom__btn {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--panel);
+  color: var(--text);
+  cursor: pointer;
+  font-size: 20px;
+  line-height: 1;
+  backdrop-filter: blur(10px);
+  touch-action: none;
+  user-select: none;
+}
+.zoom__btn:hover:not(:disabled) {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+}
+.zoom__btn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.chip--leave {
+  border-color: rgba(217, 111, 111, 0.4);
+  color: #f0b6b6;
+}
+.chip--leave:hover {
+  border-color: rgba(217, 111, 111, 0.75);
+  background: rgba(217, 111, 111, 0.14);
+}
+
+.placing--floating {
+  position: absolute;
+  top: calc(var(--topbar-h, 52px) + 52px);
+  left: 12px;
+  right: 12px;
+  margin: 0;
+  background: var(--panel-solid);
+  box-shadow: var(--shadow);
+  z-index: 195;
+}
+
+/* ------------------------------------------------------------- teléfonos */
+@media (max-width: 720px) {
+  /* Safari en iPhone agranda la página al enfocar un campo de menos de 16px. */
+  input[type='text'],
+  input[type='email'],
+  input[type='password'],
+  input:not([type]),
+  textarea,
+  .search {
+    font-size: 16px;
+  }
+
+  .topbar {
+    gap: 6px;
+    padding: 8px;
+  }
+  .topbar__label {
+    display: none;
+  }
+  .topbar .chip {
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+  .topbar__group--people {
+    order: 3;
+    justify-content: flex-start;
+  }
+  /* En el celular cada fila de la barra le come alto a la sala: el nombre
+     propio y el aviso de espera no aportan lo suficiente para ocupar una. */
+  .who,
+  .who--waiting {
+    display: none;
+  }
+  .placing--floating {
+    left: 8px;
+    right: 8px;
+  }
+
+  /* Los paneles pasan a ocupar el ancho completo. */
+  .side {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    width: auto;
+  }
+  .side.is-collapsed {
+    right: auto;
+  }
+  .videodock {
+    right: 8px;
+    left: 8px;
+    width: auto;
+  }
+
+  /* El inspector se vuelve una ficha al pie, no una barra fija de 380px. */
+  .inspector {
+    left: 8px;
+    right: 8px;
+    bottom: 8px;
+    width: auto;
+    min-width: 0;
+    max-height: 40vh;
+    overflow-y: auto;
+    transform: none;
+  }
+  .inspector__grid {
+    grid-template-columns: 1fr;
+  }
+  .inspector footer {
+    flex-wrap: wrap;
+  }
+  .inspector__tip {
+    margin-left: 0;
+    text-align: left;
+    flex-basis: 100%;
+  }
+
+  /* Botones más grandes para el dedo, y fuera del camino del inspector. */
+  .zoom__btn {
+    width: 46px;
+    height: 46px;
+    font-size: 22px;
+  }
+  .app--inspecting .zoom {
+    bottom: calc(40vh + 14px);
+  }
+  .app--inspecting .help {
+    display: none;
+  }
+
+  /* Con un panel abierto la sala no se ve: no tiene sentido dejar los botones. */
+  .side:not(.is-collapsed) ~ .zoom,
+  .side:not(.is-collapsed) ~ .help {
+    display: none;
+  }
+  .help {
+    left: 8px;
+    bottom: 8px;
+  }
+  .help__list {
+    max-width: calc(100vw - 16px);
+  }
 }
